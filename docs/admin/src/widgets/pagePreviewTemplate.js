@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { Component } from 'react';
+import React, { useEffect } from 'react';
 import { ReactLiquid, liquidEngine } from 'react-liquid';
 import {
   TOGGLE_ATTRIBUTE,
@@ -18,10 +18,10 @@ const templateWithIcons = template.replace(
   (match, icon) => require(`../../../_includes/icons/${icon}.svg`)
 );
 
-export default class Preview extends Component {
-  constructor(props) {
-    super(props);
+export default function Preview(props) {
+  const containerRef = React.createRef();
 
+  useEffect(() => {
     liquidEngine.registerFilter('slugify', (initial) =>
       slugify(initial || '', { lower: true })
     );
@@ -34,21 +34,6 @@ export default class Preview extends Component {
       (initial) => initial && initial.trim()
     );
 
-    this.containerRef = React.createRef();
-  }
-
-  /**
-   * @param {MouseEvent} event - The mouse event object from the click.
-   */
-  handleClick(event) {
-    const target = event.target;
-    if (target.matches(`[${TOGGLE_ATTRIBUTE}]`)) {
-      event.preventDefault();
-      toggleDetails(target, this.containerRef.current);
-    }
-  }
-
-  componentDidUpdate(props) {
     // Tabs show under the show/hide details button on a pattern.
     const tabsContainerDom = props.document.querySelectorAll(
       `.${Tabs.BASE_CLASS}`
@@ -60,20 +45,29 @@ export default class Preview extends Component {
         tabsInst.init();
       }
     }
-  }
+  }, []);
 
-  render() {
-    const data = {
-      page: this.props.entry.toJS().data,
-    };
-    return (
-      // TODO: We're breaking some a11y here by making the whole page clickable.
-      // eslint-disable-next-line
-      <div ref={this.containerRef} onClick={(event) => this.handleClick(event)}>
-        <ReactLiquid template={templateWithIcons} data={data} html />
-      </div>
-    );
-  }
+  /**
+   * @param {MouseEvent} event - The mouse event object from the click.
+   */
+  const handleClick = (event) => {
+    const target = event.target;
+    if (target.matches(`[${TOGGLE_ATTRIBUTE}]`)) {
+      event.preventDefault();
+      toggleDetails(target, containerRef.current);
+    }
+  };
+
+  const data = {
+    page: props.entry.toJS().data,
+  };
+  return (
+    // TODO: We're breaking some a11y here by making the whole page clickable.
+    // eslint-disable-next-line
+    <div ref={containerRef} onClick={(event) => handleClick(event)}>
+      <ReactLiquid template={templateWithIcons} data={data} html />
+    </div>
+  );
 }
 
 Preview.propTypes = {
